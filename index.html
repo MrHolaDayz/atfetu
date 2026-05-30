@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мой чек-лист</title>
+    <title>Общий чек-лист</title>
     <style>
         * {
             margin: 0;
@@ -28,13 +28,19 @@
         h1 {
             text-align: center;
             color: #2c3e50;
-            margin-bottom: 30px;
+            margin-bottom: 8px;
             font-size: 2em;
             font-weight: 300;
             letter-spacing: 1px;
         }
 
-        /* --- Поле ввода --- */
+        .subtitle {
+            text-align: center;
+            color: #999;
+            font-size: 13px;
+            margin-bottom: 25px;
+        }
+
         .input-group {
             display: flex;
             gap: 10px;
@@ -76,7 +82,13 @@
             box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
         }
 
-        /* --- Список --- */
+        .input-group button:disabled {
+            background: #b0c4d8;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
         .checklist {
             list-style: none;
             display: flex;
@@ -93,26 +105,17 @@
             padding: 14px 16px;
             transition: all 0.3s;
             border: 1px solid #eee;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         .checklist li:hover {
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            border-color: #ddd;
         }
 
-        /* --- Чекбокс --- */
+        .checklist li.completed .task-text {
+            text-decoration: line-through;
+            color: #b0b0b0;
+        }
+
         .checklist input[type="checkbox"] {
             width: 22px;
             height: 22px;
@@ -121,7 +124,6 @@
             flex-shrink: 0;
         }
 
-        /* --- Текст задачи --- */
         .checklist .task-text {
             flex: 1;
             font-size: 16px;
@@ -130,12 +132,6 @@
             word-break: break-word;
         }
 
-        .checklist li.completed .task-text {
-            text-decoration: line-through;
-            color: #b0b0b0;
-        }
-
-        /* --- Кнопка удаления --- */
         .delete-btn {
             background: none;
             border: none;
@@ -154,7 +150,6 @@
             background: #fde8e8;
         }
 
-        /* --- Нижняя панель --- */
         .footer {
             display: flex;
             justify-content: space-between;
@@ -162,9 +157,11 @@
             margin-top: 20px;
             color: #888;
             font-size: 14px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
-        .clear-btn {
+        .clear-btn, .refresh-btn {
             background: none;
             border: 1px solid #ddd;
             color: #888;
@@ -181,7 +178,20 @@
             color: white;
         }
 
-        /* --- Пустое состояние --- */
+        .refresh-btn:hover {
+            background: #3498db;
+            border-color: #3498db;
+            color: white;
+        }
+
+        .status {
+            text-align: center;
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 8px;
+            min-height: 18px;
+        }
+
         .empty-state {
             text-align: center;
             color: #bbb;
@@ -195,7 +205,6 @@
             margin-bottom: 10px;
         }
 
-        /* --- Адаптация для телефона --- */
         @media (max-width: 400px) {
             .input-group {
                 flex-direction: column;
@@ -209,9 +218,9 @@
 <body>
 
 <div class="container">
-    <h1>📋 Мой чек-лист</h1>
+    <h1>📋 Общий чек-лист</h1>
+    <p class="subtitle">Изменения сохраняются в репозиторий GitHub</p>
 
-    <!-- Поле для добавления -->
     <div class="input-group">
         <input
             type="text"
@@ -222,36 +231,139 @@
         <button id="addBtn">Добавить</button>
     </div>
 
-    <!-- Список задач -->
     <ul class="checklist" id="checklist"></ul>
 
-    <!-- Нижняя панель -->
     <div class="footer">
         <span id="counter">Задач: 0</span>
-        <button class="clear-btn" id="clearCompleted">Удалить выполненные</button>
+        <div>
+            <button class="refresh-btn" id="refreshBtn">🔄 Обновить</button>
+            <button class="clear-btn" id="clearCompleted">Удалить выполненные</button>
+        </div>
     </div>
+    <div class="status" id="status"></div>
 </div>
 
 <script>
-    // --- Хранилище ---
-    const STORAGE_KEY = 'my_checklist_data';
+    // ⚠️ ЗАМЕНИ НА СВОИ ДАННЫЕ:
+    const OWNER = 'mrholadayz';        // Твой GitHub username
+    const REPO = 'atfetu';             // Название репозитория
+    const TOKEN = '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';   // GitHub Fine-grained token
+    const FILE_PATH = 'tasks.json';    // Файл с задачами в репозитории
+    const BRANCH = 'main';             // Ветка (main или master)
 
-    // Загружаем данные из localStorage
-    let tasks = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-
-    // --- Элементы DOM ---
+    // --- DOM-элементы ---
     const checklist = document.getElementById('checklist');
     const taskInput = document.getElementById('taskInput');
     const addBtn = document.getElementById('addBtn');
     const counter = document.getElementById('counter');
     const clearCompletedBtn = document.getElementById('clearCompleted');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const statusEl = document.getElementById('status');
 
-    // --- Сохранение в localStorage ---
-    function saveTasks() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    let tasks = [];
+    let isUpdating = false;
+
+    // --- API GitHub ---
+    async function githubAPI(path, method = 'GET', body = null) {
+        const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`;
+        const headers = {
+            'Authorization': `Bearer ${TOKEN}`,
+            'Accept': 'application/vnd.github+json',
+        };
+
+        const options = { method, headers };
+        if (body) {
+            headers['Content-Type'] = 'application/json';
+            options.body = JSON.stringify(body);
+        }
+
+        const response = await fetch(url, options);
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.message || 'Ошибка GitHub API');
+        }
+        return response.json();
     }
 
-    // --- Отрисовка списка ---
+    // --- Получить текущий файл из репозитория ---
+    async function fetchTasks() {
+        try {
+            const data = await githubAPI(FILE_PATH);
+            const content = atob(data.content); // Декодируем base64
+            tasks = JSON.parse(content);
+            return data.sha; // SHA нужен для обновления файла
+        } catch (e) {
+            // Если файла ещё нет — создадим при первом сохранении
+            tasks = [];
+            return null;
+        }
+    }
+
+    // --- Сохранить задачи в репозиторий ---
+    async function saveTasks(sha) {
+        const content = btoa(unescape(encodeURIComponent(JSON.stringify(tasks, null, 2))));
+        const body = {
+            message: 'Обновление чек-листа',
+            content: content,
+            branch: BRANCH,
+        };
+        if (sha) body.sha = sha;
+
+        await githubAPI(FILE_PATH, 'PUT', body);
+    }
+
+    // --- Загрузка данных при открытии ---
+    let currentSHA = null;
+
+    async function loadFromGitHub() {
+        statusEl.textContent = 'Загрузка...';
+        try {
+            currentSHA = await fetchTasks();
+            statusEl.textContent = '✓ Загружено из репозитория';
+            setTimeout(() => { statusEl.textContent = ''; }, 2000);
+        } catch (e) {
+            statusEl.textContent = '⚠ Не удалось загрузить данные';
+            tasks = [];
+        }
+        render();
+    }
+
+    // --- Синхронизация с GitHub ---
+    async function syncWithGitHub(action) {
+        if (isUpdating) return;
+        isUpdating = true;
+        addBtn.disabled = true;
+        statusEl.textContent = '⏳ Сохранение...';
+
+        try {
+            // Всегда получаем свежий SHA перед сохранением
+            const data = await githubAPI(FILE_PATH);
+            currentSHA = data.sha;
+            // Декодируем актуальное содержимое (на случай если кто-то другой изменил)
+            tasks = JSON.parse(atob(data.content));
+
+            // Применяем локальное изменение поверх свежих данных
+            if (action) action();
+
+            await saveTasks(currentSHA);
+            // Обновляем SHA после сохранения
+            const newData = await githubAPI(FILE_PATH);
+            currentSHA = newData.sha;
+
+            statusEl.textContent = '✓ Сохранено в репозиторий';
+            setTimeout(() => { statusEl.textContent = ''; }, 2000);
+        } catch (e) {
+            statusEl.textContent = '⚠ Ошибка сохранения: ' + e.message;
+            // Перезагружаем актуальные данные
+            await loadFromGitHub();
+        }
+
+        isUpdating = false;
+        addBtn.disabled = false;
+        render();
+    }
+
+    // --- Отрисовка ---
     function render() {
         checklist.innerHTML = '';
 
@@ -286,12 +398,18 @@
                 <button class="delete-btn" data-index="${index}" title="Удалить">×</button>
             `;
 
-            // Обработчики событий
             const checkbox = li.querySelector('input[type="checkbox"]');
             const deleteBtn = li.querySelector('.delete-btn');
 
-            checkbox.addEventListener('change', () => toggleTask(index));
-            deleteBtn.addEventListener('click', () => deleteTask(index));
+            checkbox.addEventListener('change', () => {
+                tasks[index].completed = checkbox.checked;
+                syncWithGitHub(null);
+            });
+
+            deleteBtn.addEventListener('click', () => {
+                tasks.splice(index, 1);
+                syncWithGitHub(null);
+            });
 
             checklist.appendChild(li);
         });
@@ -299,7 +417,6 @@
         counter.textContent = `Задач: ${activeCount} / ${tasks.length}`;
     }
 
-    // --- Экранирование HTML (защита от XSS) ---
     function escapeHTML(str) {
         const div = document.createElement('div');
         div.textContent = str;
@@ -311,47 +428,31 @@
         const text = taskInput.value.trim();
         if (!text) return;
 
-        tasks.push({
-            text: text,
-            completed: false
+        syncWithGitHub(() => {
+            tasks.push({ text: text, completed: false });
         });
 
         taskInput.value = '';
         taskInput.focus();
-        saveTasks();
-        render();
     }
 
-    // --- Переключение выполнения ---
-    function toggleTask(index) {
-        tasks[index].completed = !tasks[index].completed;
-        saveTasks();
-        render();
-    }
-
-    // --- Удаление задачи ---
-    function deleteTask(index) {
-        tasks.splice(index, 1);
-        saveTasks();
-        render();
-    }
-
-    // --- Удаление всех выполненных ---
+    // --- Удаление выполненных ---
     function clearCompleted() {
-        tasks = tasks.filter(task => !task.completed);
-        saveTasks();
-        render();
+        syncWithGitHub(() => {
+            tasks = tasks.filter(task => !task.completed);
+        });
     }
 
-    // --- Привязка событий ---
+    // --- События ---
     addBtn.addEventListener('click', addTask);
     taskInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') addTask();
     });
     clearCompletedBtn.addEventListener('click', clearCompleted);
+    refreshBtn.addEventListener('click', loadFromGitHub);
 
-    // --- Первая отрисовка ---
-    render();
+    // --- Запуск ---
+    loadFromGitHub();
 </script>
 
 </body>
