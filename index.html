@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой чек-лист</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2em;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        /* --- Поле ввода --- */
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 14px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s;
+            outline: none;
+            background: white;
+        }
+
+        .input-group input:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .input-group button {
+            padding: 14px 24px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .input-group button:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        /* --- Список --- */
+        .checklist {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .checklist li {
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            transition: all 0.3s;
+            border: 1px solid #eee;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .checklist li:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border-color: #ddd;
+        }
+
+        /* --- Чекбокс --- */
+        .checklist input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            accent-color: #3498db;
+            flex-shrink: 0;
+        }
+
+        /* --- Текст задачи --- */
+        .checklist .task-text {
+            flex: 1;
+            font-size: 16px;
+            color: #2c3e50;
+            transition: all 0.3s;
+            word-break: break-word;
+        }
+
+        .checklist li.completed .task-text {
+            text-decoration: line-through;
+            color: #b0b0b0;
+        }
+
+        /* --- Кнопка удаления --- */
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #ccc;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        .delete-btn:hover {
+            color: #e74c3c;
+            background: #fde8e8;
+        }
+
+        /* --- Нижняя панель --- */
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            color: #888;
+            font-size: 14px;
+        }
+
+        .clear-btn {
+            background: none;
+            border: 1px solid #ddd;
+            color: #888;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+
+        .clear-btn:hover {
+            background: #e74c3c;
+            border-color: #e74c3c;
+            color: white;
+        }
+
+        /* --- Пустое состояние --- */
+        .empty-state {
+            text-align: center;
+            color: #bbb;
+            padding: 40px 20px;
+            font-size: 15px;
+        }
+
+        .empty-state span {
+            font-size: 40px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        /* --- Адаптация для телефона --- */
+        @media (max-width: 400px) {
+            .input-group {
+                flex-direction: column;
+            }
+            .input-group button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📋 Мой чек-лист</h1>
+
+    <!-- Поле для добавления -->
+    <div class="input-group">
+        <input
+            type="text"
+            id="taskInput"
+            placeholder="Добавить новую задачу..."
+            maxlength="200"
+        >
+        <button id="addBtn">Добавить</button>
+    </div>
+
+    <!-- Список задач -->
+    <ul class="checklist" id="checklist"></ul>
+
+    <!-- Нижняя панель -->
+    <div class="footer">
+        <span id="counter">Задач: 0</span>
+        <button class="clear-btn" id="clearCompleted">Удалить выполненные</button>
+    </div>
+</div>
+
+<script>
+    // --- Хранилище ---
+    const STORAGE_KEY = 'my_checklist_data';
+
+    // Загружаем данные из localStorage
+    let tasks = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+
+    // --- Элементы DOM ---
+    const checklist = document.getElementById('checklist');
+    const taskInput = document.getElementById('taskInput');
+    const addBtn = document.getElementById('addBtn');
+    const counter = document.getElementById('counter');
+    const clearCompletedBtn = document.getElementById('clearCompleted');
+
+    // --- Сохранение в localStorage ---
+    function saveTasks() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    }
+
+    // --- Отрисовка списка ---
+    function render() {
+        checklist.innerHTML = '';
+
+        if (tasks.length === 0) {
+            checklist.innerHTML = `
+                <div class="empty-state">
+                    <span>📝</span>
+                    Список пока пуст.<br>Добавьте первую задачу!
+                </div>
+            `;
+            counter.textContent = 'Задач: 0';
+            return;
+        }
+
+        let activeCount = 0;
+
+        tasks.forEach((task, index) => {
+            const li = document.createElement('li');
+            if (task.completed) {
+                li.classList.add('completed');
+            } else {
+                activeCount++;
+            }
+
+            li.innerHTML = `
+                <input
+                    type="checkbox"
+                    ${task.completed ? 'checked' : ''}
+                    data-index="${index}"
+                >
+                <span class="task-text">${escapeHTML(task.text)}</span>
+                <button class="delete-btn" data-index="${index}" title="Удалить">×</button>
+            `;
+
+            // Обработчики событий
+            const checkbox = li.querySelector('input[type="checkbox"]');
+            const deleteBtn = li.querySelector('.delete-btn');
+
+            checkbox.addEventListener('change', () => toggleTask(index));
+            deleteBtn.addEventListener('click', () => deleteTask(index));
+
+            checklist.appendChild(li);
+        });
+
+        counter.textContent = `Задач: ${activeCount} / ${tasks.length}`;
+    }
+
+    // --- Экранирование HTML (защита от XSS) ---
+    function escapeHTML(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // --- Добавление задачи ---
+    function addTask() {
+        const text = taskInput.value.trim();
+        if (!text) return;
+
+        tasks.push({
+            text: text,
+            completed: false
+        });
+
+        taskInput.value = '';
+        taskInput.focus();
+        saveTasks();
+        render();
+    }
+
+    // --- Переключение выполнения ---
+    function toggleTask(index) {
+        tasks[index].completed = !tasks[index].completed;
+        saveTasks();
+        render();
+    }
+
+    // --- Удаление задачи ---
+    function deleteTask(index) {
+        tasks.splice(index, 1);
+        saveTasks();
+        render();
+    }
+
+    // --- Удаление всех выполненных ---
+    function clearCompleted() {
+        tasks = tasks.filter(task => !task.completed);
+        saveTasks();
+        render();
+    }
+
+    // --- Привязка событий ---
+    addBtn.addEventListener('click', addTask);
+    taskInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') addTask();
+    });
+    clearCompletedBtn.addEventListener('click', clearCompleted);
+
+    // --- Первая отрисовка ---
+    render();
+</script>
+
+</body>
+</html>
